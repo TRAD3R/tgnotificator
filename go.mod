@@ -1,4 +1,4 @@
-module github.com/TRAD3R/tgnorificator
+module github.com/TRAD3R/tgnotificator
 
 go 1.24.2
 
