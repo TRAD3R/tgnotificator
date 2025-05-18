@@ -35,6 +35,8 @@ func NewTelegram(token string, channel int64, logger *slog.Logger, serviceName s
 func (t *Telegram) SendMessage(msg string) {
 	msg = fmt.Sprintf("%s:\n%s", t.serviceName, msg)
 	message := tgbotapi.NewMessage(t.channel, msg)
+	message.ParseMode = tgbotapi.ModeHTML
+
 	if _, err := t.bot.Send(message); err != nil {
 		t.logger.Error("failed to send message", "err", err.Error())
 	}
