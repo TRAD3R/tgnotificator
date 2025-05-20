@@ -4,8 +4,14 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+const (
+	rps      = 20
+	interval = time.Minute
 )
 
 type Telegram struct {
@@ -13,6 +19,7 @@ type Telegram struct {
 	channel     int64
 	logger      *slog.Logger
 	serviceName string
+	rateLimiter *rateLimiter
 }
 
 func NewTelegram(token string, channel int64, logger *slog.Logger, serviceName string, isDebug bool) (*Telegram, error) {
@@ -29,10 +36,17 @@ func NewTelegram(token string, channel int64, logger *slog.Logger, serviceName s
 		channel:     channel,
 		logger:      logger,
 		serviceName: serviceName,
+		rateLimiter: newRateLimiter(rps, interval),
 	}, nil
 }
 
 func (t *Telegram) SendMessage(msg string) {
+	if !t.rateLimiter.allowRequest() {
+		requests, remainingTime := t.rateLimiter.currentState()
+		t.logger.Debug("limit request", "requests", requests, "remaining", remainingTime.String())
+		time.Sleep(remainingTime)
+	}
+
 	msg = fmt.Sprintf("%s:\n%s", t.serviceName, msg)
 	message := tgbotapi.NewMessage(t.channel, msg)
 	message.ParseMode = tgbotapi.ModeHTML
